@@ -2,15 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, Star } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
 import { Product, formatTaka } from "@/lib/products";
-import { useCart } from "@/lib/store";
 
 export function ProductCard({ product }: { product: Product }) {
-  const { addItem } = useCart();
-
   return (
-    <article className="group overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+    <article className="group overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
       <Link href={`/products/${product.slug}`} className="block overflow-hidden bg-[#f3eee8]">
         <Image
           src={product.image}
@@ -49,14 +46,14 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           ) : null}
         </div>
-        <button
-          onClick={() => addItem(product)}
-          aria-label={`Add ${product.title} to cart`}
-          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#161412] px-4 text-sm font-black text-white transition hover:bg-[#e63b2e]"
+        <Link
+          href={`/products/${product.slug}`}
+          aria-label={`Customize ${product.title}`}
+          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[#161412] px-4 text-sm font-black text-white transition hover:bg-[#e63b2e]"
         >
-          <ShoppingBag size={17} />
-          Add to cart
-        </button>
+          Customize
+          <ArrowRight size={17} />
+        </Link>
       </div>
     </article>
   );

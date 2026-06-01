@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CreditCard, Truck } from "lucide-react";
+import { CreditCard, MessageCircle, Truck } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
-import { formatTaka } from "@/lib/products";
-import { useCart } from "@/lib/store";
+import { brand } from "@/lib/brand";
+import { SHIPPING_FEE, formatTaka } from "@/lib/products";
+import { cartKey, useCart } from "@/lib/store";
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "sslcommerz">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "cod" | "sslcommerz" | "whatsapp"
+  >("cod");
   const [status, setStatus] = useState("");
-  const delivery = subtotal > 0 ? 80 : 0;
+  const delivery = subtotal > 0 ? SHIPPING_FEE : 0;
   const total = subtotal + delivery;
 
   async function submitOrder(event: React.FormEvent<HTMLFormElement>) {
@@ -32,6 +35,42 @@ export default function CheckoutPage() {
       total,
       paymentMethod,
     };
+
+    if (paymentMethod === "whatsapp") {
+      const lines = [
+        "StickerFizz BD checkout order",
+        `Name: ${orderPayload.customer.name}`,
+        `Phone: ${orderPayload.customer.phone}`,
+        `Address: ${orderPayload.customer.address}, ${orderPayload.customer.city}`,
+        "",
+        ...items.map((item) => {
+          const details = [
+            item.phoneModel ? `Model: ${item.phoneModel}` : null,
+            item.stickerSize
+              ? `Size: ${item.stickerSize.width} x ${item.stickerSize.height} in (${item.stickerSize.area} sq in)`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          return `${item.title} x ${item.quantity} - ${formatTaka(
+            item.price * item.quantity,
+          )}${details ? ` (${details})` : ""}`;
+        }),
+        "",
+        `Subtotal: ${formatTaka(subtotal)}`,
+        `Shipping: ${formatTaka(delivery)}`,
+        `Grand Total: ${formatTaka(total)}`,
+      ];
+      window.open(
+        `https://wa.me/${brand.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+          lines.join("\n"),
+        )}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      setStatus("WhatsApp order message opened.");
+      return;
+    }
 
     const orderResponse = await fetch("/api/orders", {
       method: "POST",
@@ -54,9 +93,18 @@ export default function CheckoutPage() {
     const response = await fetch("/api/sslcommerz/init", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ total, items, orderId: orderData.orderId }),
+      body: JSON.stringify({
+        total,
+        items,
+        orderId: orderData.orderId,
+        customer: orderPayload.customer,
+      }),
     });
     const data = await response.json();
+    if (data.gatewayUrl) {
+      window.location.href = data.gatewayUrl;
+      return;
+    }
     setStatus(`${orderData.orderId} saved. ${data.message ?? "SSLCommerz session prepared."}`);
   }
 
@@ -128,6 +176,16 @@ export default function CheckoutPage() {
                   <CreditCard size={20} />
                   SSLCommerz
                 </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-black/10 p-4 font-bold sm:col-span-2">
+                  <input
+                    type="radio"
+                    name="payment"
+                    checked={paymentMethod === "whatsapp"}
+                    onChange={() => setPaymentMethod("whatsapp")}
+                  />
+                  <MessageCircle size={20} />
+                  WhatsApp Direct Order
+                </label>
               </div>
               {status ? (
                 <p className="mt-5 rounded-lg bg-[#fff1cb] p-4 text-sm font-bold">
@@ -140,8 +198,20 @@ export default function CheckoutPage() {
               <h2 className="text-xl font-black">Summary</h2>
               <div className="mt-4 grid gap-3">
                 {items.map((item) => (
-                  <div key={item.id} className="flex justify-between gap-4 text-sm font-bold">
-                    <span>{item.title} x {item.quantity}</span>
+                  <div key={cartKey(item)} className="flex justify-between gap-4 text-sm font-bold">
+                    <span>
+                      {item.title} x {item.quantity}
+                      {item.phoneModel ? (
+                        <span className="block text-xs text-black/50">
+                          {item.phoneModel}
+                        </span>
+                      ) : null}
+                      {item.stickerSize ? (
+                        <span className="block text-xs text-black/50">
+                          {item.stickerSize.width} x {item.stickerSize.height} in
+                        </span>
+                      ) : null}
+                    </span>
                     <span>{formatTaka(item.price * item.quantity)}</span>
                   </div>
                 ))}

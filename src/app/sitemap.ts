@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
+import { brand } from "@/lib/brand";
 import { products } from "@/lib/products";
 
-const baseUrl = "https://stickerfizz.vercel.app";
+const baseUrl = brand.siteUrl;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

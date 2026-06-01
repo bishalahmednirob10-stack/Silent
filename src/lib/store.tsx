@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { Product } from "./products";
+import { Product, STICKER_PRICE_PER_SQ_INCH } from "./products";
 
 export type CartItem = {
   id: string;
@@ -10,14 +10,28 @@ export type CartItem = {
   image: string;
   price: number;
   quantity: number;
-  variant?: string;
+  type: Product["type"];
+  phoneModel?: string;
+  stickerSize?: {
+    width: number;
+    height: number;
+    area: number;
+  };
+};
+
+export type CartSelection = {
+  phoneModel?: string;
+  stickerSize?: {
+    width: number;
+    height: number;
+  };
 };
 
 type CartContextValue = {
   items: CartItem[];
-  addItem: (product: Product, variant?: string) => void;
-  removeItem: (id: string, variant?: string) => void;
-  updateQuantity: (id: string, quantity: number, variant?: string) => void;
+  addItem: (product: Product, selection?: CartSelection) => void;
+  removeItem: (id: string, key?: string) => void;
+  updateQuantity: (id: string, quantity: number, key?: string) => void;
   clearCart: () => void;
   count: number;
   subtotal: number;
@@ -25,8 +39,41 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function cartKey(id: string, variant?: string) {
-  return `${id}:${variant ?? "default"}`;
+export function cartKey(item: Pick<CartItem, "id" | "phoneModel" | "stickerSize">) {
+  const stickerKey = item.stickerSize
+    ? `${item.stickerSize.width}x${item.stickerSize.height}`
+    : "";
+  return [item.id, item.phoneModel ?? "", stickerKey].join(":");
+}
+
+function selectionKey(id: string, selection?: CartSelection) {
+  const stickerKey = selection?.stickerSize
+    ? `${selection.stickerSize.width}x${selection.stickerSize.height}`
+    : "";
+  return [id, selection?.phoneModel ?? "", stickerKey].join(":");
+}
+
+function itemFromProduct(product: Product, selection?: CartSelection): CartItem {
+  const width = Math.max(selection?.stickerSize?.width ?? 3, 1);
+  const height = Math.max(selection?.stickerSize?.height ?? 3, 1);
+  const area = width * height;
+  const stickerSize =
+    product.type === "sticker" ? { width, height, area } : undefined;
+
+  return {
+    id: product.id,
+    title: product.title,
+    slug: product.slug,
+    image: product.image,
+    price:
+      product.type === "sticker"
+        ? area * STICKER_PRICE_PER_SQ_INCH
+        : product.price,
+    quantity: 1,
+    type: product.type,
+    phoneModel: product.type === "case" ? selection?.phoneModel : undefined,
+    stickerSize,
+  };
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -44,56 +91,44 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items]);
 
   const value = useMemo<CartContextValue>(() => {
-    const addItem = (product: Product, variant?: string) => {
+    const addItem = (product: Product, selection?: CartSelection) => {
       setItems((current) => {
-        const key = cartKey(product.id, variant);
-        const existing = current.find(
-          (item) => cartKey(item.id, item.variant) === key,
-        );
+        const key = selectionKey(product.id, selection);
+        const existing = current.find((item) => cartKey(item) === key);
 
         if (existing) {
           return current.map((item) =>
-            cartKey(item.id, item.variant) === key
+            cartKey(item) === key
               ? { ...item, quantity: item.quantity + 1 }
               : item,
           );
         }
 
-        return [
-          ...current,
-          {
-            id: product.id,
-            title: product.title,
-            slug: product.slug,
-            image: product.image,
-            price: product.price,
-            quantity: 1,
-            variant,
-          },
-        ];
+        return [...current, itemFromProduct(product, selection)];
       });
     };
 
-    const removeItem = (id: string, variant?: string) => {
-      setItems((current) =>
-        current.filter(
-          (item) => cartKey(item.id, item.variant) !== cartKey(id, variant),
-        ),
-      );
+    const removeItem = (id: string, key?: string) => {
+      setItems((current) => {
+        const targetKey = key ?? id;
+        return current.filter((item) => cartKey(item) !== targetKey);
+      });
     };
 
-    const updateQuantity = (id: string, quantity: number, variant?: string) => {
+    const updateQuantity = (id: string, quantity: number, key?: string) => {
       if (quantity < 1) {
-        removeItem(id, variant);
+        removeItem(id, key);
         return;
       }
 
       setItems((current) =>
-        current.map((item) =>
-          cartKey(item.id, item.variant) === cartKey(id, variant)
+        current.map((item) => {
+          const itemKey = cartKey(item);
+          const targetKey = key ?? id;
+          return itemKey === targetKey
             ? { ...item, quantity }
-            : item,
-        ),
+            : item;
+        }),
       );
     };
 

@@ -4,12 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
-import { formatTaka } from "@/lib/products";
-import { useCart } from "@/lib/store";
+import { SHIPPING_FEE, formatTaka } from "@/lib/products";
+import { cartKey, useCart } from "@/lib/store";
 
 export default function CartPage() {
   const { items, subtotal, updateQuantity, removeItem } = useCart();
-  const delivery = subtotal > 0 ? 80 : 0;
+  const delivery = subtotal > 0 ? SHIPPING_FEE : 0;
   const total = subtotal + delivery;
 
   return (
@@ -30,9 +30,11 @@ export default function CartPage() {
         ) : (
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
             <section className="grid gap-4">
-              {items.map((item) => (
+              {items.map((item) => {
+                const key = cartKey(item);
+                return (
                 <article
-                  key={`${item.id}-${item.variant ?? "default"}`}
+                  key={key}
                   className="grid gap-4 rounded-lg border border-black/10 bg-white p-4 shadow-sm sm:grid-cols-[130px_1fr_auto]"
                 >
                   <Image
@@ -52,10 +54,21 @@ export default function CartPage() {
                     <p className="mt-1 font-bold text-[#e63b2e]">
                       {formatTaka(item.price)}
                     </p>
+                    {item.phoneModel ? (
+                      <p className="mt-2 text-sm font-bold text-black/60">
+                        Phone Model: {item.phoneModel}
+                      </p>
+                    ) : null}
+                    {item.stickerSize ? (
+                      <p className="mt-2 text-sm font-bold text-black/60">
+                        Sticker Size: {item.stickerSize.width} x{" "}
+                        {item.stickerSize.height} in ({item.stickerSize.area} sq in)
+                      </p>
+                    ) : null}
                     <div className="mt-4 inline-flex items-center rounded-lg border border-black/10">
                       <button
                         onClick={() =>
-                          updateQuantity(item.id, item.quantity - 1, item.variant)
+                          updateQuantity(item.id, item.quantity - 1, key)
                         }
                         className="grid size-10 place-items-center"
                         aria-label="Decrease quantity"
@@ -67,7 +80,7 @@ export default function CartPage() {
                       </span>
                       <button
                         onClick={() =>
-                          updateQuantity(item.id, item.quantity + 1, item.variant)
+                          updateQuantity(item.id, item.quantity + 1, key)
                         }
                         className="grid size-10 place-items-center"
                         aria-label="Increase quantity"
@@ -77,14 +90,15 @@ export default function CartPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => removeItem(item.id, item.variant)}
+                    onClick={() => removeItem(item.id, key)}
                     className="grid size-10 place-items-center rounded-lg border border-black/10 text-black/50 hover:text-[#e63b2e]"
                     aria-label="Remove item"
                   >
                     <Trash2 size={18} />
                   </button>
                 </article>
-              ))}
+                );
+              })}
             </section>
 
             <aside className="h-fit rounded-lg border border-black/10 bg-white p-5 shadow-sm">

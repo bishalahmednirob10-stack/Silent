@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 type OrderPayload = {
   customer: {
@@ -14,7 +16,12 @@ type OrderPayload = {
     slug: string;
     price: number;
     quantity: number;
-    variant?: string;
+    phoneModel?: string;
+    stickerSize?: {
+      width: number;
+      height: number;
+      area: number;
+    };
   }[];
   subtotal: number;
   delivery: number;
@@ -24,8 +31,38 @@ type OrderPayload = {
 
 export async function POST(request: Request) {
   const order = (await request.json()) as OrderPayload;
-  const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
   const orderId = `SF-${Date.now()}`;
+  const firebaseReady = Boolean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+  const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
+
+  if (firebaseReady && db) {
+    try {
+      await addDoc(collection(db, "orders"), {
+        orderId,
+        createdAt: serverTimestamp(),
+        status: "New",
+        ...order,
+      });
+
+      return NextResponse.json({
+        ok: true,
+        orderId,
+        message: "Order saved to Firebase.",
+      });
+    } catch (error) {
+      return NextResponse.json(
+        {
+          ok: false,
+          orderId,
+          message:
+            error instanceof Error
+              ? `Firebase order save failed: ${error.message}`
+              : "Firebase order save failed.",
+        },
+        { status: 502 },
+      );
+    }
+  }
 
   if (!scriptUrl) {
     return NextResponse.json(
@@ -33,7 +70,7 @@ export async function POST(request: Request) {
         ok: false,
         orderId,
         message:
-          "Google Apps Script URL is not configured. Add GOOGLE_APPS_SCRIPT_URL after deploying the Sheet script.",
+          "Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* values to save production orders.",
       },
       { status: 503 },
     );

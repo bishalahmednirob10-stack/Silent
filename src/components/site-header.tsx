@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, Search, ShoppingBag, Sparkles, UserRound } from "lucide-react";
+import { Menu, Search, ShoppingBag, X } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { useCart } from "@/lib/store";
 
@@ -10,11 +11,12 @@ const nav = [
   { label: "Shop", href: "/products" },
   { label: "Custom", href: "/#contact" },
   { label: "Reviews", href: "/#reviews" },
-  { label: "Admin", href: "/admin" },
+  { label: "Contact", href: "/#contact" },
 ];
 
 export function SiteHeader() {
   const { count } = useCart();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 border-b border-black/10 bg-[#fffaf6]/90 backdrop-blur-xl">
@@ -43,21 +45,6 @@ export function SiteHeader() {
             <Search size={18} />
           </Link>
           <Link
-            href={brand.facebookUrl}
-            target="_blank"
-            className="hidden h-10 items-center gap-2 rounded-lg bg-[#1877f2] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#0f65d8] lg:inline-flex"
-          >
-            <Sparkles size={16} />
-            Facebook
-          </Link>
-          <Link
-            href="/admin"
-            className="hidden size-10 place-items-center rounded-lg border border-black/10 bg-white text-black shadow-sm transition hover:border-black/25 sm:grid"
-            aria-label="Account"
-          >
-            <UserRound size={18} />
-          </Link>
-          <Link
             href="/cart"
             className="relative grid size-10 place-items-center rounded-lg bg-[#161412] text-white shadow-sm transition hover:bg-[#e63b2e]"
             aria-label="Cart"
@@ -69,15 +56,32 @@ export function SiteHeader() {
               </span>
             ) : null}
           </Link>
-          <Link
-            href="/products"
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
             className="grid size-10 place-items-center rounded-lg border border-black/10 bg-white md:hidden"
             aria-label="Menu"
           >
-            <Menu size={18} />
-          </Link>
+            {menuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
       </div>
+      {menuOpen ? (
+        <div className="border-t border-black/10 bg-[#fffaf6] px-4 py-4 shadow-lg md:hidden">
+          <nav className="grid gap-2">
+            {nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-[14px] px-3 py-3 text-base font-black hover:bg-[#f4c45a]"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      ) : null}
     </header>
   );
 }

@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldCheck, Star, Truck } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
 import { SiteHeader } from "@/components/site-header";
-import { StickerCalculator } from "@/components/sticker-calculator";
-import { AddToCartButton } from "./product-actions";
+import { ProductActions } from "./product-actions";
 import { brand } from "@/lib/brand";
 import { formatTaka, getProduct, getRelatedProducts, products } from "@/lib/products";
 
@@ -98,7 +97,7 @@ export default async function ProductPage({
             <p className="mt-5 text-lg leading-8 text-black/68">
               {product.description}
             </p>
-            <div className="mt-6 flex items-baseline gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <span className="text-4xl font-black text-[#e63b2e]">
                 {product.type === "sticker" ? "From " : ""}
                 {formatTaka(product.price)}
@@ -108,8 +107,13 @@ export default async function ProductPage({
                   {formatTaka(product.oldPrice)}
                 </span>
               ) : null}
+              {product.type === "case" ? (
+                <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
+                  Save Tk 50
+                </span>
+              ) : null}
             </div>
-            <AddToCartButton product={product} />
+            <ProductActions product={product} />
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg border border-black/10 bg-white p-4">
@@ -124,11 +128,6 @@ export default async function ProductPage({
               </div>
             </div>
 
-            {product.type === "sticker" ? (
-              <div className="mt-5">
-                <StickerCalculator />
-              </div>
-            ) : null}
           </div>
         </section>
 
