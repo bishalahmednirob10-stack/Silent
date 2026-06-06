@@ -14,10 +14,12 @@ import { MotionGrid, MotionItem, MotionSection } from "@/components/motion";
 import { ProductCard } from "@/components/product-card";
 import { SiteHeader } from "@/components/site-header";
 import { StickerCalculator } from "@/components/sticker-calculator";
+import ProductCarousel from "@/components/product-carousel";
 import { brand } from "@/lib/brand";
 import { collectionCards, products } from "@/lib/products";
 
 const featured = products.filter((product) => product.featured).slice(0, 8);
+const trendingProducts = products.filter((p) => p.featured).slice(0, 11);
 const whatsappLink = `https://wa.me/${brand.phone.replace(/\D/g, "")}`;
 
 const trustItems = [
@@ -122,9 +124,9 @@ export default function Home() {
 
             <div className="relative">
               <div className="absolute -right-6 -top-6 hidden rounded-full bg-[#f4c45a] px-5 py-3 text-sm font-black shadow-xl lg:block">
-                Floating price card
+                Latest products
               </div>
-              <StickerCalculator />
+              <ProductCarousel products={trendingProducts as any} />
             </div>
           </div>
         </section>
