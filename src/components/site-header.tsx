@@ -22,8 +22,8 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-black/10 bg-[#fffaf6]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 font-black">
-          <span className="relative grid size-10 place-items-center overflow-hidden rounded-full bg-[#161412] text-[#ffce6b]">
-            <Image src={brand.logo} alt={`${brand.displayName} logo`} fill className="object-cover" />
+          <span className="relative inline-flex h-10 w-28 overflow-hidden rounded-lg bg-black">
+            <Image src={brand.logo} alt={`${brand.displayName} logo`} fill className="object-contain" />
           </span>
           <span className="text-xl tracking-tight">{brand.displayName}</span>
         </Link>
